@@ -23,6 +23,7 @@ async function run() {
     try {
         await client.connect();
         const productCollection = client.db('manufacturerCompany').collection('products');
+        const ReviewCollection = client.db('manufacturerCompany').collection('reviews');
 
 
         // ----------------all GET APT
@@ -31,6 +32,11 @@ async function run() {
             res.send(products);
         })
 
+        app.get('/review', async (req, res) => {
+            const review = await ReviewCollection.find().toArray();
+            res.send(review);
+        })
+        
     }
 
 
