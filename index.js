@@ -19,11 +19,15 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 
 
+
+
 async function run() {
     try {
         await client.connect();
         const productCollection = client.db('manufacturerCompany').collection('products');
-        const ReviewCollection = client.db('manufacturerCompany').collection('reviews');
+        const reviewCollection = client.db('manufacturerCompany').collection('reviews');
+        const userCollection = client.db('manufacturerCompany').collection('user');
+        const orderCollection = client.db('manufacturerCompany').collection('orders');
 
 
         // ----------------all GET APT
@@ -40,9 +44,27 @@ async function run() {
         })
 
         app.get('/review', async (req, res) => {
-            const review = await ReviewCollection.find().toArray();
+            const review = await reviewCollection.find().toArray();
             res.send(review);
         })
+
+        app.get('/orders', async (req,res)=>{
+            const orders = await orderCollection.find().toArray();
+            res.send(orders);
+        })
+
+        
+        // ---------------All POST API
+        app.post('/orders',async (req,res)=>{
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+            return res.send({ success: true, result });
+        })
+
+
+        // ---------------PUT API
+
+
         
     }
 
