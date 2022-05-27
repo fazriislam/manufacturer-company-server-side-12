@@ -38,7 +38,7 @@ async function run() {
 
         app.get('/product/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: ObjectId(id)}
+            const query = { _id: ObjectId(id) }
             const product = await productCollection.findOne(query);
             res.send(product);
         })
@@ -48,24 +48,31 @@ async function run() {
             res.send(review);
         })
 
-        app.get('/orders', async (req,res)=>{
+        app.get('/orders', async (req, res) => {
             const orders = await orderCollection.find().toArray();
             res.send(orders);
         })
 
-        
-        // ---------------All POST API
-        app.post('/orders',async (req,res)=>{
+
+        // ---------------All POST API 
+        app.post('/orders', async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
             return res.send({ success: true, result });
+        })
+
+        app.post('/review', async (req, res) => {
+            const review = req.body;
+            console.log(review);
+            const result = await reviewCollection.insertOne(review);
+            return res.send(result);
         })
 
 
         // ---------------PUT API
 
 
-        
+
     }
 
 
