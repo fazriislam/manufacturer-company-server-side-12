@@ -75,17 +75,17 @@ async function run() {
             res.send(review);
         })
 
-        app.get('/orders', async (req, res) => {
+        app.get('/orders',verifyJWT, async (req, res) => {
             const orders = await orderCollection.find().toArray();
             res.send(orders);
         })
 
-        app.get('/user', async (req, res) => {
+        app.get('/user',verifyJWT, async (req, res) => {
             const user = await userCollection.find().toArray();
             res.send(user);
         })
 
-        app.get('/admin/:email', async (req, res) => {
+        app.get('/admin/:email',verifyJWT, async (req, res) => {
             const email = req.params.email;
             const user = await userCollection.findOne({ email: email });
             const isAdmin = user.role === 'admin';
@@ -101,7 +101,7 @@ async function run() {
 
 
         // ---------------All POST API 
-        app.post('/product', async (req, res) => {
+        app.post('/product',verifyJWT, verifyAdmin, async (req, res) => {
             const product = req.body;
             const result = await productCollection.insertOne(product);
             return res.send({ success: true, result });
@@ -144,17 +144,6 @@ async function run() {
             const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
             res.send({ result, token });
         })
-
-        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
-            const email = req.params.email;
-            const filter = { email: email };
-            const updateDoc = {
-              $set: { role: 'admin' },
-            };
-            const result = await userCollection.updateOne(filter, updateDoc);
-            res.send(result);
-      
-          })
 
           app.put('/user/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.params.email;
