@@ -24,7 +24,6 @@ function verifyJWT(req, res, next) {
         return res.status(401).send({ message: 'Unauthorized access' });
     }
     const token = authHeader.split(' ')[1];
-    console.log(token);
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
         if (err) {
             return res.status(403).send({ message: 'Forbidden access' })
@@ -44,6 +43,18 @@ async function run() {
         const userCollection = client.db('manufacturerCompany').collection('user');
         const orderCollection = client.db('manufacturerCompany').collection('orders');
         const profileCollection = client.db('manufacturerCompany').collection('profile');
+
+        // ----------------Make Admin
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({ email: requester });
+            if (requesterAccount.role === 'admin') {
+              next();
+            }
+            else {
+              res.status(403).send({ message: 'forbidden' });
+            }
+          }
 
 
         // ----------------all GET APT
@@ -83,6 +94,12 @@ async function run() {
 
 
         // ---------------All POST API 
+        app.post('/product', async (req, res) => {
+            const product = req.body;
+            const result = await productCollection.insertOne(product);
+            return res.send({ success: true, result });
+        })
+
         app.post('/orders', async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
@@ -120,6 +137,17 @@ async function run() {
             const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
             res.send({ result, token });
         })
+
+        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateDoc = {
+              $set: { role: 'admin' },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
+      
+          })
 
 
 
