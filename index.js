@@ -85,6 +85,13 @@ async function run() {
             res.send(user);
         })
 
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = await userCollection.findOne({ email: email });
+            const isAdmin = user.role === 'admin';
+            res.send({ admin: isAdmin })
+          })
+
         // app.get('/profile', async (req, res) => {
         //     const email = req.query.email;
         //     const profileInfo = await orderCollection.find({email}).toArray();
@@ -139,6 +146,17 @@ async function run() {
         })
 
         app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateDoc = {
+              $set: { role: 'admin' },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
+      
+          })
+
+          app.put('/user/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
             const updateDoc = {
