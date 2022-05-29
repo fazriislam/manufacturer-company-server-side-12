@@ -189,7 +189,16 @@ async function run() {
             const filter = { _id: ObjectId(id) };
             const result = await orderCollection.deleteOne(filter);
             res.send(result);
-          })
+        })
+
+        app.delete('/product/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await productCollection.deleteOne(filter);
+            res.send(result);
+        })
+
+
     }
 
 
