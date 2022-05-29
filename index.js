@@ -4,6 +4,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -42,6 +43,7 @@ async function run() {
         const reviewCollection = client.db('manufacturerCompany').collection('reviews');
         const userCollection = client.db('manufacturerCompany').collection('user');
         const orderCollection = client.db('manufacturerCompany').collection('orders');
+        const paymentCollection = client.db('manufacturerCompany').collection('payment');
         const profileCollection = client.db('manufacturerCompany').collection('profile');
 
         // ----------------Make Admin
@@ -85,12 +87,19 @@ async function run() {
             }
             else {
                 return res.status(403).send({ message: 'forbidden access' });
-              }
+            }
+        })
+
+        app.get('/orders/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const orders = await orderCollection.findOne(query);
+            res.send(orders);
         })
 
         app.get('/user', verifyJWT, async (req, res) => {
-            const user = await userCollection.find().toArray();
-            res.send(user);
+            const users = await userCollection.find().toArray();
+            res.send(users);
         })
 
         app.get('/admin/:email', verifyJWT, async (req, res) => {
@@ -99,13 +108,6 @@ async function run() {
             const isAdmin = user.role === 'admin';
             res.send({ admin: isAdmin })
         })
-
-        // app.get('/profile', async (req, res) => {
-        //     const email = req.query.email;
-        //     const profileInfo = await orderCollection.find({email}).toArray();
-        //     console.log(profileInfo);
-        //     res.send(profileInfo);
-        // })
 
 
         // ---------------All POST API 
@@ -127,15 +129,32 @@ async function run() {
             return res.send(result);
         })
 
-        // app.patch('/profile', async (req, res) => {
-        //     const query = req.params.email;
-        //     const profile = req.body;
-        //     const updatedDoc = {
-        //         $set: {profile},
-        //       }
-        //     const result = await profileCollection.insertOne(profile);
-        //     return res.send(result);
-        // })
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const product = req.body;
+            const price = product.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret })
+        });
+
+        app.patch('/orders/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = { _id: ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const result = await paymentCollection.insertOne(payment);
+            const updatedOrder = await orderCollection.updateOne(filter, updatedDoc);
+            res.send(updatedOrder);
+        })
 
 
         // ---------------PUT API
@@ -164,9 +183,13 @@ async function run() {
 
         })
 
-
-
-
+        // --------------All DELETE API
+        app.delete('/orders/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(filter);
+            res.send(result);
+          })
     }
 
 
